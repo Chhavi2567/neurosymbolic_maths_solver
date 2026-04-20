@@ -132,12 +132,16 @@ body { background: var(--bg) !important; }
 .header-box p  { color: rgba(255,255,255,0.85) !important; margin: 0; font-size: 15px; }
 
 .section-heading {
-    font-size: 1.2rem !important;
+    font-size: 1.25rem !important;
     font-weight: 700 !important;
-    color: var(--text-primary) !important;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #534AB7 0%, #3B8BD4 100%) !important;
     margin: 1.5rem 0 0.75rem 0 !important;
-    padding-bottom: 0.35rem !important;
-    border-bottom: 2px solid var(--border) !important;
+    padding: 12px 18px !important;
+    border-radius: 10px !important;
+    border-bottom: none !important;
+    letter-spacing: 0.02em !important;
+    box-shadow: 0 2px 8px rgba(83, 74, 183, 0.25) !important;
 }
 
 .pipeline-box {

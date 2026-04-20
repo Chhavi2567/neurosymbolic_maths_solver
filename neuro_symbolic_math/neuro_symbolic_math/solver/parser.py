@@ -7,6 +7,7 @@ No math is computed here — only intent extraction.
 
 import json
 import re
+
 import google.generativeai as genai
 
 from solver.gemini_model import DEFAULT_GEMINI_MODEL, generate_content_with_retry
@@ -17,6 +18,8 @@ Your ONLY job is to read a math problem and return a JSON object describing it.
 You do NOT solve the problem. You only classify and extract structure.
 
 Return ONLY a raw JSON object — no markdown, no backticks, no explanation.
+
+In JSON string values, backslashes must be escaped: use two backslashes before every LaTeX command (e.g. \\\\frac and \\\\sin in the JSON text so the value contains valid LaTeX).
 
 JSON schema:
 {
@@ -48,27 +51,49 @@ Output: {"problem_type":"proof","operation":"prove","latex_expression":"(a+b)^2 
 """
 
 
+def _repair_latex_json_escapes(text: str) -> str:
+    """
+    Gemini often emits LaTeX like \\sin(x) with a single backslash before a letter.
+    In JSON, \\sin is invalid (only \\\", \\\\, \\/, \\b, \\f, \\n, \\r, \\t, \\uXXXX are valid).
+    Double any \\ that starts a LaTeX command letter but is not already doubled.
+    """
+    # Not preceded by \\ — then \\ + letter → \\\\ + letter (two chars backslash in JSON → one in string)
+    return re.sub(r"(?<!\\)\\([a-zA-Z])", r"\\\\\1", text)
+
+
+def _parse_response_json(raw: str) -> dict:
+    raw = raw.strip()
+    raw = re.sub(r"^```[a-z]*\n?", "", raw)
+    raw = re.sub(r"\n?```$", "", raw)
+    raw = raw.strip()
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        repaired = _repair_latex_json_escapes(raw)
+        return json.loads(repaired)
+
+
 def parse_problem(user_query: str, api_key: str) -> dict:
     """
     Send user query to Gemini and get structured JSON back.
     Returns a dict with problem metadata — never a solution.
     """
+    raw = ""
     try:
         genai.configure(api_key=api_key)
+        generation_config = genai.GenerationConfig(
+            response_mime_type="application/json",
+            temperature=0.2,
+        )
         model = genai.GenerativeModel(
             model_name=DEFAULT_GEMINI_MODEL,
             system_instruction=SYSTEM_INSTRUCTION,
+            generation_config=generation_config,
         )
 
         response = generate_content_with_retry(model, user_query)
         raw = response.text.strip()
-
-        # Strip markdown code fences if Gemini adds them anyway
-        raw = re.sub(r"^```[a-z]*\n?", "", raw)
-        raw = re.sub(r"\n?```$", "", raw)
-        raw = raw.strip()
-
-        parsed = json.loads(raw)
+        parsed = _parse_response_json(raw)
 
         # Ensure required keys exist with safe defaults
         parsed.setdefault("problem_type", "algebra")
