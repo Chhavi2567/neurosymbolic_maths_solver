@@ -44,7 +44,7 @@ flowchart TD
 
     H --> I[LLM Explainer]
     I --> J[Gradio UI]
-
+```
 ---
 
 ## ✨ Features
