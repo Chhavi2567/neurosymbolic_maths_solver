@@ -28,23 +28,22 @@ Instead, it:
 
 ## 🏗️ Architecture
 
-User Query
-↓
-LLM (Parser - Gemini)
-↓
-Structured JSON
-↓
-Symbolic Router
-↓
-+-------------------------------+
-| SymPy | Matplotlib | Z3 |
-+-------------------------------+
-↓
-Result Verifier
-↓
-LLM (Explainer)
-↓
-Gradio UI
+```mermaid
+flowchart TD
+    A[User Query] --> B[LLM Parser (Gemini)]
+    B --> C[Structured JSON]
+    C --> D[Symbolic Router]
+
+    D --> E[SymPy Engine]
+    D --> F[Matplotlib Engine]
+    D --> G[Z3 Engine]
+
+    E --> H[Result Verifier]
+    F --> H
+    G --> H
+
+    H --> I[LLM Explainer]
+    I --> J[Gradio UI]
 
 ---
 
