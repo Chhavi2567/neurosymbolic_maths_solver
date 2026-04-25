@@ -20,24 +20,13 @@ symbolic engine computed. Results are verified before display.
 
 | Requirement | Detail |
 |---|---|
-| **Google Colab** (recommended) | Free, no GPU needed |
 | **Python 3.10+** | If running locally |
 | **Gemini API Key** | Free at [aistudio.google.com](https://aistudio.google.com/app/apikey) — 1500 req/day |
 | **GPU** | Not required — all heavy math runs on SymPy (CPU) |
 
 ---
 
-## Quickest Start: Google Colab
-
-1. Open [Google Colab](https://colab.research.google.com)
-2. Upload `NeuroSymbolic_Math_Solver.ipynb`
-3. Get your free Gemini API key at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
-4. Run all cells (Runtime → Run all)
-5. Click the **public Gradio link** printed at the end
-
----
-
-## Local Setup
+## Setup
 
 ```bash
 # 1. Clone / download this project
@@ -115,7 +104,6 @@ User Query (natural language)
 neuro_symbolic_math/
 ├── app.py                       ← Main Gradio app (run this)
 ├── requirements.txt
-├── NeuroSymbolic_Math_Solver.ipynb  ← Google Colab notebook (all-in-one)
 ├── README.md
 └── solver/
     ├── __init__.py

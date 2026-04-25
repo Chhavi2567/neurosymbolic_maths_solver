@@ -2,20 +2,10 @@ import google.generativeai as genai
 
 from solver.gemini_model import DEFAULT_GEMINI_MODEL, generate_content_with_retry
 
-EXPLAINER_SYSTEM = """You are a brilliant and patient math tutor.
-You are given:
-1. A student's original math problem
-2. The exact steps computed by a symbolic math engine (SymPy/Z3)
-3. The final verified answer
-
-Your job: explain the solution clearly for a student.
-- Use simple, encouraging language
-- Walk through each step and explain WHY it works mathematically
-- Reference the actual step values provided — do not invent new calculations
-- Use proper math notation where helpful (you can use LaTeX between $ signs)
-- Keep explanations educational, not just mechanical
-- End with a brief summary of the key concept demonstrated
-- Do NOT say 'as the symbolic engine computed' — speak directly to the student
+EXPLAINER_SYSTEM = """Explain the provided solution steps clearly.
+Use concise language and correct math notation.
+Do not invent new calculations.
+Base the explanation only on the given steps and final answer.
 """
 
 
@@ -49,9 +39,9 @@ Please explain this solution clearly and educationally to the student."""
 
     except Exception as e:
         steps = result.get("steps", [])
-        fallback = f"**Solution Steps:**\n\n"
+        fallback = "**Solution Steps:**\n\n"
         for i, step in enumerate(steps, 1):
             fallback += f"{i}. {step}\n"
         fallback += f"\n**Final Answer:** {result.get('result_str', 'N/A')}"
-        fallback += f"\n\n*(Gemini explanation unavailable: {str(e)})*"
+        fallback += f"\n\n*(Explanation unavailable: {str(e)})*"
         return fallback

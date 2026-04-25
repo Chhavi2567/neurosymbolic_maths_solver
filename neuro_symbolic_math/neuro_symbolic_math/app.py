@@ -173,11 +173,11 @@ button.primary-btn:hover { background: #3d35a8 !important; transform: translateY
 
 def make_status_html(step: int, parsed: dict = None, verif: dict = None) -> str:
     steps_info = [
-        ("🧠", "Neural Parser", "Gemini reads the problem"),
-        ("⚙️", "Symbolic Engine", "SymPy / Z3 / Matplotlib computes exactly"),
-        ("🔍", "Verifier", "Back-substitution cross-check"),
-        ("📖", "Explainer", "Gemini narrates the steps"),
-        ("✅", "Complete", "Verified answer ready"),
+        ("1", "Parser", "Read and structure the problem"),
+        ("2", "Engine", "Compute the result"),
+        ("3", "Verifier", "Cross-check the output"),
+        ("4", "Explanation", "Generate a clear walkthrough"),
+        ("5", "Complete", "Result ready"),
     ]
 
     html = "<div style='font-size:13px;'>"
@@ -328,7 +328,7 @@ def solve_problem(query: str):
             "",
             "",
             None,
-            _explanation_panel_html(f"❌ Gemini parsing failed: {err}", is_error=True),
+            _explanation_panel_html(f"❌ Parsing failed: {err}", is_error=True),
         )
 
     parsed = parse_result["data"]
@@ -381,30 +381,25 @@ def build_ui():
 
         gr.HTML("""
         <div class='header-box'>
-            <h1>🧮 NeuroSymbolic Math Solver</h1>
-            <p>
-                Neural understanding (Gemini) + Symbolic precision (SymPy · Z3 · Matplotlib) —
-                verified answers with zero hallucination
-            </p>
+            <h1>Math Solver</h1>
+            <p>Structured parsing, symbolic computation, and verification.</p>
         </div>
         """)
 
         gr.HTML("""
         <div class='pipeline-box'>
             <b>How it works:</b> &nbsp;
-            🧠 Gemini parses your intent &nbsp;→&nbsp;
-            ⚙️ SymPy/Z3 computes exactly &nbsp;→&nbsp;
-            🔍 Verifier cross-checks &nbsp;→&nbsp;
-            📖 Gemini explains the steps
-            &nbsp;&nbsp;|&nbsp;&nbsp;
-            <b>The LLM never does the math</b> — only understands and explains.
+            Parse problem &nbsp;→&nbsp;
+            Compute result &nbsp;→&nbsp;
+            Verify output &nbsp;→&nbsp;
+            Explain steps
         </div>
         """)
 
         with gr.Row():
             with gr.Column(scale=2):
                 query_input = gr.Textbox(
-                    label="📝 Your Math Problem",
+                    label="Your Math Problem",
                     placeholder=(
                         "Type any math problem, e.g.:\n"
                         "• Integrate x² sin(x) dx\n"
@@ -415,7 +410,7 @@ def build_ui():
                     lines=4,
                 )
 
-                solve_btn = gr.Button("🚀 Solve", variant="primary", size="lg")
+                solve_btn = gr.Button("Solve", variant="primary", size="lg")
 
                 gr.HTML("<p style='font-size:13px;color:#888;margin:8px 0 4px;'>Quick examples:</p>")
 
@@ -429,7 +424,7 @@ def build_ui():
             with gr.Column(scale=1):
                 status_display = gr.HTML(make_status_html(-1), label="Pipeline Status")
 
-        gr.HTML("<div class='section-heading'>🎯 Answer &amp; Steps</div>")
+        gr.HTML("<div class='section-heading'>Answer &amp; Steps</div>")
 
         with gr.Row():
             with gr.Column(scale=1):
@@ -438,13 +433,13 @@ def build_ui():
                 result_display = gr.HTML(label="Result")
 
         graph_display = gr.Image(
-            label="📈 Graph",
+            label="Graph",
             visible=True,
             show_label=True,
             height=420,
         )
 
-        gr.HTML("<div class='section-heading'>📖 Explanation</div>")
+        gr.HTML("<div class='section-heading'>Explanation</div>")
         explanation_display = gr.HTML(
             value=_explanation_panel_html(
                 "Run the solver to see a step-by-step explanation here.",
