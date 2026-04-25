@@ -1,10 +1,3 @@
-"""
-parser.py  —  Neural layer
-Uses Google Gemini (free tier) to parse any math problem
-into a structured dict that the symbolic engines can consume.
-No math is computed here — only intent extraction.
-"""
-
 import json
 import re
 
@@ -52,12 +45,6 @@ Output: {"problem_type":"proof","operation":"prove","latex_expression":"(a+b)^2 
 
 
 def _repair_latex_json_escapes(text: str) -> str:
-    """
-    Gemini often emits LaTeX like \\sin(x) with a single backslash before a letter.
-    In JSON, \\sin is invalid (only \\\", \\\\, \\/, \\b, \\f, \\n, \\r, \\t, \\uXXXX are valid).
-    Double any \\ that starts a LaTeX command letter but is not already doubled.
-    """
-    # Not preceded by \\ — then \\ + letter → \\\\ + letter (two chars backslash in JSON → one in string)
     return re.sub(r"(?<!\\)\\([a-zA-Z])", r"\\\\\1", text)
 
 
@@ -74,10 +61,6 @@ def _parse_response_json(raw: str) -> dict:
 
 
 def parse_problem(user_query: str, api_key: str) -> dict:
-    """
-    Send user query to Gemini and get structured JSON back.
-    Returns a dict with problem metadata — never a solution.
-    """
     raw = ""
     try:
         genai.configure(api_key=api_key)
@@ -95,7 +78,6 @@ def parse_problem(user_query: str, api_key: str) -> dict:
         raw = response.text.strip()
         parsed = _parse_response_json(raw)
 
-        # Ensure required keys exist with safe defaults
         parsed.setdefault("problem_type", "algebra")
         parsed.setdefault("operation", "solve")
         parsed.setdefault("latex_expression", user_query)

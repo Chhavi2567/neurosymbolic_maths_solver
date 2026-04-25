@@ -1,11 +1,3 @@
-"""
-explainer.py  —  Neural explanation layer
-Uses Gemini (free) to convert the symbolic engine's steps
-into a clear, student-friendly explanation.
-Gemini does NOT compute anything here — it only narrates
-what the symbolic engine already computed exactly.
-"""
-
 import google.generativeai as genai
 
 from solver.gemini_model import DEFAULT_GEMINI_MODEL, generate_content_with_retry
@@ -28,10 +20,6 @@ Your job: explain the solution clearly for a student.
 
 
 def narrate(user_query: str, parsed: dict, result: dict, verification: dict, api_key: str) -> str:
-    """
-    Generate a student-friendly explanation using Gemini.
-    The LLM only explains — it never recomputes.
-    """
     try:
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel(
@@ -60,7 +48,6 @@ Please explain this solution clearly and educationally to the student."""
         return response.text.strip()
 
     except Exception as e:
-        # Fallback: return the raw steps if Gemini fails
         steps = result.get("steps", [])
         fallback = f"**Solution Steps:**\n\n"
         for i, step in enumerate(steps, 1):

@@ -1,10 +1,3 @@
-"""
-prover.py  —  Proof verification engine
-Uses SymPy's symbolic simplification to verify algebraic identities.
-Uses Z3 SMT solver for constraint-based proofs.
-Returns whether the identity holds and a full proof trace.
-"""
-
 from sympy import (
     symbols, simplify, expand, trigsimp, latex,
     Eq, Symbol, solve, sympify, factor, cancel,
@@ -39,10 +32,7 @@ def _parse(expr_str: str, var_syms: dict):
 
 
 def _split_equation(expr_str: str):
-    """Split 'LHS = RHS' into two parts."""
-    # Remove outer LaTeX display markers
     s = expr_str.strip().lstrip("$").rstrip("$").strip()
-    # Split on '=' but not '==' or '<=' or '>='
     import re
     parts = re.split(r"(?<![<>!])=(?!=)", s)
     if len(parts) == 2:
@@ -73,7 +63,6 @@ def run(parsed: dict) -> dict:
         difference = lhs - rhs
         steps.append(f"Computing LHS − RHS = {latex(difference)}")
 
-        # ── Method 1: expand + simplify ────────────────────────────
         simplified = simplify(expand(difference))
         steps.append(f"After expand + simplify: {latex(simplified)}")
         if simplified == 0:
@@ -81,7 +70,6 @@ def run(parsed: dict) -> dict:
             method_used = "expand + simplify (algebraic identity confirmed)"
             steps.append("Result is exactly 0 — identity PROVED ✓")
 
-        # ── Method 2: trigsimp ─────────────────────────────────────
         if not proved:
             trig_simplified = trigsimp(difference)
             steps.append(f"After trigsimp: {latex(trig_simplified)}")
@@ -90,7 +78,6 @@ def run(parsed: dict) -> dict:
                 method_used = "trigonometric simplification"
                 steps.append("Result is exactly 0 — identity PROVED ✓")
 
-        # ── Method 3: cancel + factor ──────────────────────────────
         if not proved:
             cancelled = cancel(factor(difference))
             steps.append(f"After cancel + factor: {latex(cancelled)}")
@@ -99,14 +86,12 @@ def run(parsed: dict) -> dict:
                 method_used = "cancel + factor"
                 steps.append("Result is exactly 0 — identity PROVED ✓")
 
-        # ── Method 4: Z3 numerical counterexample search ──────────
         if not proved:
             steps.append("Attempting Z3 SMT solver to search for counterexample...")
             try:
                 from z3 import Reals, Solver, sat, unsat, RealVal
                 import random
 
-                # Numerical check at multiple random points
                 all_zero = True
                 import numpy as np
                 f_numeric = None

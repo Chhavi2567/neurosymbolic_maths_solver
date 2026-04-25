@@ -1,9 +1,3 @@
-"""
-numerical.py  —  Numerical methods engine
-Uses NumPy / SciPy for problems that need numerical solutions:
-eigenvalues, matrix operations, numerical ODE, root finding, etc.
-"""
-
 import numpy as np
 from scipy import linalg, optimize
 from sympy import Matrix, symbols, latex, sympify, lambdify, pi, E
@@ -38,12 +32,11 @@ def run(parsed: dict) -> dict:
     steps = []
 
     try:
-        # ── Eigenvalue / determinant for matrices ──────────────────
         if op in ("eigenvalue", "determinant", "matrix_multiply"):
             steps.append(f"Parsing matrix expression: {expr_str}")
             sym_expr = _parse(expr_str, var_syms)
 
-            if hasattr(sym_expr, "tolist"):  # SymPy Matrix
+            if hasattr(sym_expr, "tolist"):
                 np_mat = np.array(sym_expr.tolist(), dtype=float)
             else:
                 return {"success": False, "error": "Could not parse as a matrix", "steps": steps}
@@ -67,7 +60,6 @@ def run(parsed: dict) -> dict:
                 result_str   = str(np_mat.tolist())
                 result_latex = expr_str
 
-        # ── Numerical root finding ─────────────────────────────────
         elif op == "numerical_solve":
             main_var = symbols(var_names[0]) if var_names else symbols("x")
             sym_expr = _parse(expr_str, var_syms)
@@ -76,7 +68,6 @@ def run(parsed: dict) -> dict:
 
             f_num = lambdify(main_var, sym_expr, modules=["numpy"])
 
-            # Search multiple starting points
             roots_found = []
             for x0 in np.linspace(-20, 20, 40):
                 try:
@@ -87,7 +78,6 @@ def run(parsed: dict) -> dict:
                     continue
 
             if not roots_found:
-                # Try fsolve
                 for x0 in np.linspace(-10, 10, 20):
                     try:
                         sol = optimize.fsolve(f_num, x0, full_output=True)
@@ -106,7 +96,6 @@ def run(parsed: dict) -> dict:
             result_latex = ", ".join([f"x \\approx {r:.6f}" for r in roots_found]) if roots_found else "\\text{No roots found}"
 
         else:
-            # Generic: just try algebra engine
             from . import algebra
             return algebra.run(parsed)
 

@@ -1,9 +1,3 @@
-"""
-plotter.py  —  Graphing engine
-Converts LaTeX expressions to numpy functions and renders
-clean, publication-quality plots. Returns base64 PNG.
-"""
-
 import io
 import base64
 import numpy as np
@@ -30,7 +24,6 @@ COLORS = ["#534AB7", "#D85A30", "#1D9E75", "#BA7517", "#185FA5"]
 
 
 def _parse_to_sympy(expr_str: str, var: str):
-    """Parse LaTeX or plain string to SymPy expression."""
     from sympy.parsing.sympy_parser import (
         parse_expr,
         standard_transformations,
@@ -82,7 +75,6 @@ def run(parsed: dict) -> dict:
         sym_expr = _parse_to_sympy(expr_str, main_var)
         steps.append(f"Parsed expression: {latex(sym_expr)}")
 
-        # Build numeric function
         f_numeric = lambdify(sym_var, sym_expr, modules=["numpy"])
         x_vals = np.linspace(xmin, xmax, 2000)
 
@@ -92,7 +84,6 @@ def run(parsed: dict) -> dict:
 
         steps.append(f"Evaluated over [{xmin}, {xmax}] with 2000 points")
 
-        # Clamp extreme y values for readability
         finite_y = y_vals[np.isfinite(y_vals)]
         if len(finite_y) > 0:
             p5, p95 = np.nanpercentile(finite_y, 5), np.nanpercentile(finite_y, 95)
@@ -104,7 +95,6 @@ def run(parsed: dict) -> dict:
 
         steps.append(f"Auto-scaled y-axis for readability")
 
-        # ── Plot ───────────────────────────────────────────────────
         fig, ax = plt.subplots(figsize=(9, 5))
 
         ax.plot(x_vals, y_vals, color=COLORS[0], linewidth=2.2, label=f"f({main_var}) = {expr_str}")
@@ -123,7 +113,6 @@ def run(parsed: dict) -> dict:
 
         plt.tight_layout()
 
-        # Save to base64 PNG
         buf = io.BytesIO()
         plt.savefig(buf, format="png", bbox_inches="tight", facecolor="white")
         buf.seek(0)

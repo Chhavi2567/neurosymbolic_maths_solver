@@ -1,10 +1,3 @@
-"""
-verifier.py  —  Back-substitution verifier
-After the symbolic engine computes a result, this module
-verifies it by substituting back into the original expression.
-This is the final guard against any edge-case errors.
-"""
-
 from sympy import (
     symbols, sympify, simplify, lambdify,
     latex, Abs, N,
@@ -33,15 +26,10 @@ def _parse(s: str, var_syms: dict):
 
 
 def verify(parsed: dict, result: dict) -> dict:
-    """
-    Returns:
-      { "verified": bool, "method": str, "detail": str }
-    """
     op       = parsed.get("operation", "")
     var_names = parsed.get("variables", ["x"])
     var_syms  = {v: symbols(v) for v in var_names}
 
-    # Graphing, proofs, limits — trust the engine
     if op in ("plot", "prove", "limit", "series", "sum"):
         return {"verified": True, "method": "Trusted engine output", "detail": "No back-check needed for this operation type"}
 
@@ -55,12 +43,9 @@ def verify(parsed: dict, result: dict) -> dict:
         main_var = symbols(var_names[0]) if var_names else symbols("x")
         orig_expr = _parse(expr_str, var_syms)
 
-        # ── For solve: substitute roots back ──────────────────────
         if op == "solve":
             try:
-                import ast
                 roots_raw = result_str.strip()
-                # Evaluate the list of roots from SymPy string repr
                 root_syms = sympify(roots_raw)
                 if not hasattr(root_syms, "__iter__"):
                     root_syms = [root_syms]
@@ -88,7 +73,6 @@ def verify(parsed: dict, result: dict) -> dict:
             except Exception as e:
                 return {"verified": True, "method": "Trust SymPy", "detail": f"Could not verify numerically: {e}"}
 
-        # ── For differentiate: verify via numerical derivative ─────
         elif op == "differentiate":
             try:
                 result_expr = _parse(result.get("result_latex","").replace("+ C",""), var_syms)
@@ -122,7 +106,6 @@ def verify(parsed: dict, result: dict) -> dict:
             except Exception:
                 return {"verified": True, "method": "Trust SymPy", "detail": "Numerical cross-check skipped"}
 
-        # ── For integrate: verify via differentiation ──────────────
         elif op == "integrate":
             try:
                 from sympy import diff
@@ -144,7 +127,6 @@ def verify(parsed: dict, result: dict) -> dict:
             except Exception:
                 return {"verified": True, "method": "Trust SymPy", "detail": "Integral verification skipped"}
 
-        # ── Default: trust the symbolic engine ────────────────────
         return {
             "verified": True,
             "method":   "Symbolic engine (SymPy exact)",

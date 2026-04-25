@@ -1,37 +1,6 @@
-"""
-app.py  —  NeuroSymbolic Math Solver
-Gradio interface — run with: python app.py
-Get a public shareable link automatically.
-
-Architecture:
-  User Query
-     │
-     ▼
-  Gemini (free) ── Neural parser ── extracts structure, never computes
-     │
-     ▼
-  Router ── picks the right engine
-     │
-     ├── SymPy       (algebra, calculus, limits, series)
-     ├── Matplotlib  (graphing)
-     ├── SymPy+Z3    (proof verification)
-     └── NumPy/SciPy (numerical / linear algebra)
-     │
-     ▼
-  Verifier ── back-substitution, numerical cross-check
-     │
-     ▼
-  Gemini (free) ── Explains steps to the student
-     │
-     ▼
-  Gradio UI ── displays answer + graph + explanation
-"""
-
 import os
 from pathlib import Path
 
-# Load GEMINI_API_KEY / GEMINI_MODEL / GOOGLE_API_KEY from .env next to this file.
-# override=True so .env wins over stray shell exports (e.g. old GEMINI_MODEL=gemini-2.0-flash).
 _env_path = Path(__file__).resolve().parent / ".env"
 if _env_path.is_file():
     try:
@@ -41,7 +10,6 @@ if _env_path.is_file():
     except ImportError:
         pass
 
-# Optional: set before importing Gradio (telemetry only; does not affect UI assets).
 os.environ.setdefault("GRADIO_ANALYTICS_ENABLED", "False")
 
 import base64
@@ -54,12 +22,10 @@ from solver.explainer import narrate
 
 
 def _resolve_gemini_api_key() -> str:
-    """API key is never shown in the UI — use .env or export GEMINI_API_KEY / GOOGLE_API_KEY."""
     return (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or "").strip()
 
 
 def _explanation_panel_html(text: str, *, is_error: bool = False) -> str:
-    """Static HTML for explanations — avoids Gradio 6 Tabs + Markdown Svelte loops."""
     if is_error:
         safe = html.escape(text)
         return (
@@ -76,7 +42,6 @@ def _explanation_panel_html(text: str, *, is_error: bool = False) -> str:
     )
 
 
-# ── EXAMPLE PROBLEMS ──────────────────────────────────────────────────────────
 EXAMPLES = [
     ["Solve x^3 - 6x^2 + 11x - 6 = 0"],
     ["Integrate x^2 * sin(x) dx"],
@@ -95,7 +60,6 @@ EXAMPLES = [
     ["Integrate e^x * cos(x) dx"],
 ]
 
-# ── CSS THEME ─────────────────────────────────────────────────────────────────
 CUSTOM_CSS = """
 :root {
     --primary: #534AB7;
@@ -207,8 +171,7 @@ button.primary-btn:hover { background: #3d35a8 !important; transform: translateY
 .tab-nav button { font-weight: 500 !important; }
 """
 
-# ── PIPELINE STATUS HTML ───────────────────────────────────────────────────────
-def make_status_html(step: int, parsed: dict = None, result: dict = None, verif: dict = None) -> str:
+def make_status_html(step: int, parsed: dict = None, verif: dict = None) -> str:
     steps_info = [
         ("🧠", "Neural Parser", "Gemini reads the problem"),
         ("⚙️", "Symbolic Engine", "SymPy / Z3 / Matplotlib computes exactly"),
@@ -237,7 +200,6 @@ def make_status_html(step: int, parsed: dict = None, result: dict = None, verif:
             </div>
         </div>"""
 
-    # Extra info boxes
     if parsed and step >= 1:
         pt = parsed.get("problem_type", "?").title()
         op = parsed.get("operation", "?").title()
@@ -333,14 +295,7 @@ def make_steps_html(steps: list) -> str:
     </div>"""
 
 
-# ── MAIN SOLVER FUNCTION ───────────────────────────────────────────────────────
 def solve_problem(query: str):
-    """
-    Single-shot update (no streaming yields).
-
-    Gradio 6’s Svelte frontend can hit ``effect_update_depth_exceeded`` when many
-    yields update the same outputs in quick succession; one return per solve avoids that.
-    """
     if not query.strip():
         return (
             make_status_html(0),
@@ -413,7 +368,7 @@ def solve_problem(query: str):
     explanation = narrate(query, parsed, result, verif, api_key)
 
     return (
-        make_status_html(4, parsed=parsed, result=result, verif=verif),
+        make_status_html(4, parsed=parsed, verif=verif),
         analysis_html,
         combined_result_html,
         graph_img,
@@ -421,11 +376,9 @@ def solve_problem(query: str):
     )
 
 
-# ── GRADIO UI LAYOUT ───────────────────────────────────────────────────────────
 def build_ui():
     with gr.Blocks(title="NeuroSymbolic Math Solver", analytics_enabled=False) as demo:
 
-        # Header
         gr.HTML("""
         <div class='header-box'>
             <h1>🧮 NeuroSymbolic Math Solver</h1>
@@ -436,7 +389,6 @@ def build_ui():
         </div>
         """)
 
-        # Pipeline overview
         gr.HTML("""
         <div class='pipeline-box'>
             <b>How it works:</b> &nbsp;
@@ -450,7 +402,6 @@ def build_ui():
         """)
 
         with gr.Row():
-            # ── LEFT COLUMN: Input ─────────────────────────────────
             with gr.Column(scale=2):
                 query_input = gr.Textbox(
                     label="📝 Your Math Problem",
@@ -475,11 +426,9 @@ def build_ui():
                     cache_examples=False,
                 )
 
-            # ── RIGHT COLUMN: Pipeline status ─────────────────────
             with gr.Column(scale=1):
                 status_display = gr.HTML(make_status_html(-1), label="Pipeline Status")
 
-        # ── RESULTS (no tabs — Gradio 6 Tabs + dynamic outputs can infinite-loop in Svelte) ──
         gr.HTML("<div class='section-heading'>🎯 Answer &amp; Steps</div>")
 
         with gr.Row():
@@ -506,65 +455,6 @@ def build_ui():
             js_on_load=None,
         )
 
-        with gr.Accordion("ℹ️ About this project", open=False):
-            gr.Markdown("""
-## About This Project
-
-This solver uses a **Neuro-Symbolic AI** approach — combining the natural language understanding
-of a large language model with the mathematical precision of a symbolic engine.
-
-### Why Neuro-Symbolic?
-| Pure LLM | Pure Symbolic | **Neuro-Symbolic** |
-|---|---|---|
-| Understands language ✓ | Can't read natural language ✗ | Understands language ✓ |
-| Makes arithmetic errors ✗ | Computes exactly ✓ | Computes exactly ✓ |
-| Hallucinates ✗ | Rigid input format ✗ | Verified results ✓ |
-
-### Architecture
-
-```
-User Query (natural language)
-        │
-        ▼
-  Gemini (Flash) ──── Neural parser
-  (API key via env)  Extracts: type, operation, LaTeX expression
-        │
-        ▼
-  Symbolic Router ── Rule-based dispatch
-        │
-        ├── SymPy       Algebra, calculus, limits, series
-        ├── Matplotlib  Function plotting
-        ├── SymPy + Z3  Proof verification
-        └── SciPy       Numerical methods
-        │
-        ▼
-  Verifier ── Back-substitution, numerical cross-check
-        │
-        ▼
-  Gemini (Flash) ──── Narrates the symbolic steps
-  (API key via env)
-        │
-        ▼
-  Gradio UI ── Answer + graph + explanation
-```
-
-### Free APIs Used
-- **Google Gemini** (default model: `gemini-2.5-flash`, override with `GEMINI_MODEL`) — [aistudio.google.com](https://aistudio.google.com)
-- **SymPy** — open source symbolic math (no API needed)
-- **Z3 Solver** — open source SMT solver by Microsoft Research
-- **Matplotlib / NumPy / SciPy** — open source scientific Python
-
-### Supported Problem Types
-- ✅ Algebraic equations (polynomial, rational, transcendental)
-- ✅ Calculus (differentiation, integration, limits, series)
-- ✅ Function plotting
-- ✅ Algebraic identity proofs
-- ✅ Trigonometric simplification
-- ✅ Polynomial factoring and expansion
-- ✅ Numerical root finding
-- ✅ Matrix eigenvalues and determinants
-            """)
-
         _outputs = [
             status_display,
             analysis_display,
@@ -578,14 +468,13 @@ User Query (natural language)
     return demo
 
 
-# ── ENTRY POINT ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     demo = build_ui()
     demo.launch(
-        share=True,  # public share link
+        share=True,
         server_name="0.0.0.0",
         server_port=7860,
-        footer_links=["gradio", "settings"],  # Gradio 6: replaces show_api=False
+        footer_links=["gradio", "settings"],
         inbrowser=True,
         theme=gr.themes.Soft(),
         css=CUSTOM_CSS,

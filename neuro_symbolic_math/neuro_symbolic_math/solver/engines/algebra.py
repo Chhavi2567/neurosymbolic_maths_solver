@@ -1,9 +1,3 @@
-"""
-algebra.py  —  Symbolic engine for algebra & calculus
-Uses SymPy exclusively — results are mathematically exact,
-no approximation, no hallucination possible.
-"""
-
 from sympy import (
     symbols, sympify, solve, diff, integrate, limit, simplify,
     factor, expand, series, Sum, product, latex, oo, zoo,
@@ -26,10 +20,7 @@ TRANSFORMATIONS = standard_transformations + (
 
 
 def _latex_to_plain_math(s: str) -> str:
-    """
-    Best-effort LaTeX → SymPy-parseable ASCII (no backslashes).
-    Used when parse_latex / latex2sympy are unavailable or fail.
-    """
+
     import re
 
     t = (
@@ -53,7 +44,6 @@ def _latex_to_plain_math(s: str) -> str:
         (r"\infty", "oo"),
     ):
         t = t.replace(a, b)
-    # Unwrap non-nested \frac{a}{b} → ((a)/(b))
     pat = re.compile(r"\\frac\{([^{}]*)\}\{([^{}]*)\}")
     for _ in range(64):
         n = pat.sub(r"((\1)/(\2))", t, count=1)
@@ -64,8 +54,6 @@ def _latex_to_plain_math(s: str) -> str:
 
 
 def _safe_parse(expr_str: str, var_syms: dict) -> any:
-    """Try LaTeX parse first, fall back to SymPy string parse."""
-    # Clean up common LaTeX artifacts
     cleaned = (
         expr_str
         .replace("\\cdot", "*")
@@ -78,15 +66,13 @@ def _safe_parse(expr_str: str, var_syms: dict) -> any:
         .strip()
     )
 
-    # SymPy LaTeX parser (full fidelity; needs antlr4-python3-runtime>=4.11)
     try:
         return sympy_parse_latex(cleaned)
     except ImportError:
-        pass  # missing antlr — use fallbacks below
+        pass
     except Exception:
         pass
 
-    # latex2sympy2 (optional; may fail on some Python versions)
     try:
         from latex2sympy2 import latex2sympy
 
@@ -94,7 +80,6 @@ def _safe_parse(expr_str: str, var_syms: dict) -> any:
     except Exception:
         pass
 
-    # Plain-math fallback (no backslashes — parse_expr cannot read LaTeX)
     plain = _latex_to_plain_math(cleaned)
     try:
         return parse_expr(plain, local_dict=var_syms, transformations=TRANSFORMATIONS)
@@ -111,7 +96,6 @@ def run(parsed: dict) -> dict:
     lim_point = parsed.get("limit_point")
     lim_var   = parsed.get("limit_variable")
 
-    # Build symbol namespace
     var_syms = {v: symbols(v) for v in var_names}
     var_syms.update({"pi": pi, "E": E, "oo": oo, "I": I})
 
@@ -122,14 +106,11 @@ def run(parsed: dict) -> dict:
         steps = []
         result_expr = None
 
-        # ── SOLVE ──────────────────────────────────────────────────
         if op == "solve":
             steps.append(f"Set up equation: {latex(expr)} = 0")
             steps.append(f"Solving for {main_var} using SymPy algebraic solver")
             sol = solve(expr, main_var)
             if not sol:
-                # Try solve as equation (expr might be Eq)
-                from sympy import Eq
                 sol = solve(expr, main_var, dict=False)
             result_expr = sol
             steps.append(f"Solutions found: {len(sol)}")
@@ -138,7 +119,6 @@ def run(parsed: dict) -> dict:
             result_latex = ", ".join([f"{main_var} = {latex(s)}" for s in sol]) if sol else "No real solutions"
             result_str   = str(sol)
 
-        # ── DIFFERENTIATE ──────────────────────────────────────────
         elif op == "differentiate":
             steps.append(f"Differentiating: {latex(expr)}")
             steps.append(f"With respect to: {main_var}")
@@ -148,7 +128,6 @@ def run(parsed: dict) -> dict:
             result_latex = latex(result_expr)
             result_str   = str(result_expr)
 
-        # ── INTEGRATE ──────────────────────────────────────────────
         elif op == "integrate":
             steps.append(f"Computing indefinite integral of: {latex(expr)}")
             steps.append(f"With respect to: {main_var}")
@@ -158,7 +137,6 @@ def run(parsed: dict) -> dict:
             result_latex = latex(result_expr) + " + C"
             result_str   = str(result_expr) + " + C"
 
-        # ── LIMIT ──────────────────────────────────────────────────
         elif op == "limit":
             lv = symbols(lim_var) if lim_var else main_var
             if lim_point in ("oo", "inf", "infinity", "+inf"):
@@ -176,7 +154,6 @@ def run(parsed: dict) -> dict:
             result_latex = latex(result_expr)
             result_str   = str(result_expr)
 
-        # ── SIMPLIFY ───────────────────────────────────────────────
         elif op == "simplify":
             steps.append(f"Simplifying: {latex(expr)}")
             result_expr = simplify(expr)
@@ -185,7 +162,6 @@ def run(parsed: dict) -> dict:
             result_latex = latex(result_expr)
             result_str   = str(result_expr)
 
-        # ── FACTOR ────────────────────────────────────────────────
         elif op == "factor":
             steps.append(f"Factoring: {latex(expr)}")
             result_expr = factor(expr)
@@ -194,7 +170,6 @@ def run(parsed: dict) -> dict:
             result_latex = latex(result_expr)
             result_str   = str(result_expr)
 
-        # ── EXPAND ────────────────────────────────────────────────
         elif op == "expand":
             steps.append(f"Expanding: {latex(expr)}")
             result_expr = expand(expr)
@@ -202,7 +177,6 @@ def run(parsed: dict) -> dict:
             result_latex = latex(result_expr)
             result_str   = str(result_expr)
 
-        # ── SERIES ────────────────────────────────────────────────
         elif op == "series":
             steps.append(f"Computing Taylor series of {latex(expr)} around 0")
             result_expr = series(expr, main_var, 0, 6)
@@ -211,7 +185,6 @@ def run(parsed: dict) -> dict:
             result_latex = latex(result_expr)
             result_str   = str(result_expr)
 
-        # ── DEFAULT: simplify ──────────────────────────────────────
         else:
             result_expr = simplify(expr)
             steps = [f"Simplified: {latex(result_expr)}"]
