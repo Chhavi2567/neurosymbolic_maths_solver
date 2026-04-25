@@ -1,39 +1,24 @@
-# 🧠 NeuroSymbolic Math Solver
+# NeuroSymbolic Math Solver
 
-A **Neuro-Symbolic AI system** that combines the power of Large Language Models with **exact symbolic computation** to solve mathematical problems with **100% accuracy and zero hallucination**.
+Math solver with a structured pipeline for parsing, symbolic computation, verification, and explanation.
 
----
+## Overview
 
-## 🚀 Overview
+The project handles natural-language math questions by converting them to structured data, routing to the right engine, and returning a verified result.
 
-Traditional LLMs (like Gemini/GPT) are great at understanding language but often fail at **precise mathematical reasoning**.  
+## Workflow
 
-This project solves that problem by separating:
+1. Parse user input into a structured problem object.
+2. Route the problem to symbolic or numerical engines.
+3. Verify the result with operation-specific checks.
+4. Generate a readable explanation for the user.
 
-- 🧠 **Understanding (Neural)** → handled by LLM  
-- 🔢 **Computation (Symbolic)** → handled by math engines  
+## Features
 
----
-
-## ⚙️ Key Idea
-
-> **LLM never performs calculations.**
-
-Instead, it:
-1. Parses the question → structured JSON  
-2. Sends it to symbolic engines  
-3. Explains the verified result  
-
----
-
-## ✨ Features
-
-✔ Solve algebraic equations  
-✔ Perform differentiation & integration  
-✔ Evaluate limits  
-✔ Taylor series expansion  
-✔ Factorization & expansion  
-✔ Function plotting  
-✔ Identity verification (using Z3)  
-✔ Step-by-step explanations  
-✔ Graph visualization  
+- Solve algebraic equations
+- Differentiate and integrate expressions
+- Evaluate limits and series
+- Factor and expand expressions
+- Plot functions
+- Verify identities (including Z3-backed checks)
+- Provide step-by-step explanations
